@@ -36,47 +36,49 @@ public class InsercaoRegistrosPessoas
             }
         }
 
+        var pessoas = new List<Pessoa>();
+
         while (!stoppingToken.IsCancellationRequested) {
-            await Task.Delay(5_000);
 
-            var pessoas = new List<Pessoa>();
-
-            Pessoa pessoa;
-
-
-
-            while (_channel.Reader.TryRead(out pessoa))
+            await  foreach (var pessoa in _channel.Reader.ReadAllAsync())
+            {
                 pessoas.Add(pessoa);
 
-            if (pessoas.Count == 0)
-                continue;
+                if(pessoas.Count < 100)
+                {
+                    continue;
+                }
 
-            try {
-                var batch = _conn.CreateBatch();
-                var batchCommands = new List<NpgsqlBatchCommand>();
+                try
+                {
+                    var batch = _conn.CreateBatch();
+                    var batchCommands = new List<NpgsqlBatchCommand>();
 
-                foreach (var p in pessoas) {
-                    var batchCmd = new NpgsqlBatchCommand("""
+                    foreach (var p in pessoas)
+                    {
+                        var batchCmd = new NpgsqlBatchCommand("""
                         insert into pessoas
                         (id, apelido, nome, nascimento, stack)
                         values ($1, $2, $3, $4, $5);
                     """);
-                    batchCmd.Parameters.AddWithValue(p.Id);
-                    batchCmd.Parameters.AddWithValue(p.Apelido);
-                    batchCmd.Parameters.AddWithValue(p.Nome);
-                    batchCmd.Parameters.AddWithValue(p.Nascimento.Value);
-                    batchCmd.Parameters.AddWithValue(p.Stack == null ? DBNull.Value : p.Stack.Select(s => s.ToString()).ToArray());
-                    batch.BatchCommands.Add(batchCmd);
+                        batchCmd.Parameters.AddWithValue(p.Id);
+                        batchCmd.Parameters.AddWithValue(p.Apelido);
+                        batchCmd.Parameters.AddWithValue(p.Nome);
+                        batchCmd.Parameters.AddWithValue(p.Nascimento.Value);
+                        batchCmd.Parameters.AddWithValue(p.Stack == null ? DBNull.Value : p.Stack.Select(s => s.ToString()).ToArray());
+                        batch.BatchCommands.Add(batchCmd);
 
-                    var buscaStackValue = p.Stack == null ? "" : string.Join("", p.Stack.Select(s => s.ToString()));
-                    var buscaValue = $"{p.Apelido}{p.Nome}{buscaStackValue}" ?? "";
+                    }
+
+                    pessoas.Clear();
+                    await batch.ExecuteNonQueryAsync();
                 }
+                catch (Exception e)
+                {
+                    _logger.LogError(e, "erro no worker :)");
+                }
+            }
 
-                await batch.ExecuteNonQueryAsync();
-            }
-            catch (Exception e) {
-                _logger.LogError(e, "erro no worker :)");
-            }
         }
 
         await _conn.CloseAsync();

@@ -39,7 +39,7 @@ var DuplicatedResultStringResponse = Results.Text(ResponseCriacao.DuplicatedResu
 var ResponseAfeStringResponse = Results.Text(ResponseCriacao.ResponseAfeString, contentType: "application/json; charset=utf-8", statusCode: 422);
 
 app.MapPost("/pessoas", async (HttpContext http,
-                               Channel<Pessoa> channel,
+                               Channel <Pessoa> channel,
                                ConcurrentDictionary<string, Pessoa> pessoaDicionary,
                                ConcurrentDictionary<Guid, Pessoa> pessoasById,
                                ConcurrentDictionary<string, byte> apelidoPessoas,
@@ -50,7 +50,7 @@ app.MapPost("/pessoas", async (HttpContext http,
                                        return ResponseAfeStringResponse;
                                    }
 
-                                   if (apelidoPessoas.ContainsKey(pessoa.Apelido)) {
+                                   if(!apelidoPessoas.TryAdd(pessoa.Apelido, default(byte))) {
                                        return DuplicatedResultStringResponse;
                                    }
 
@@ -61,7 +61,6 @@ app.MapPost("/pessoas", async (HttpContext http,
 
                                    apelidoPessoas.TryAdd(pessoa.Apelido, default(byte));
                                    pessoasById.TryAdd(pessoa.Id.Value, pessoa);
-
                                    http.Response.Headers.Location = $"/pessoas/{pessoa.Id}";
                                    http.Response.StatusCode = 201;
                                    return Results.Json(new ResponseCriacao { Pessoa = pessoa }, ResponseCriacaoContext.Default.ResponseCriacao);
@@ -71,14 +70,17 @@ app.MapPost("/pessoas", async (HttpContext http,
 var respostaErroResult1 = Results.Text(ResponseConsulta.RespostaErroString, contentType: "application/json; charset=utf-8", statusCode: 404);
 
 app.MapGet("/pessoas/{id}", async (HttpContext http, ConcurrentDictionary<Guid, Pessoa> cache, Guid id) => {
-    await Task.Delay(10);
     if (cache.TryGetValue(id, out var value)) {
+        return Results.Json(value, PersonContext.Default.Pessoa);
+    }
+    await Task.Delay(10);
+    if (cache.TryGetValue(id, out value))
+    {
         return Results.Json(value, PersonContext.Default.Pessoa);
     }
 
     return respostaErroResult1;
-
-}).Produces<ResponseConsulta>();
+}).CacheOutput().Produces<ResponseConsulta>();
 
 var respostaErroResult2 = Results.Text(ResponseBusca.RespostaErroString, contentType: "application/json; charset=utf-8", statusCode: 400);
 
