@@ -1,1 +1,0 @@
-# Rinha de Backend - C#
