@@ -24,7 +24,7 @@ builder.Services.AddHostedService<InsercaoRegistrosPessoas>();
 
 builder.Services.AddSingleton<IHostedService, SincronizacaoBuscaPessoas>();
 
-var natsDestination =  Environment.GetEnvironmentVariable("NATS_DESTINATION");
+var natsDestination = Environment.GetEnvironmentVariable("NATS_DESTINATION");
 var natsOwnChannel = Environment.GetEnvironmentVariable("NATS_OWN");
 
 builder.Services.AddSingleton<string>(natsOwnChannel ?? "");

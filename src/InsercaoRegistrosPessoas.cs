@@ -1,4 +1,3 @@
-using NATS.Client.Core;
 using Npgsql;
 using System.Collections.Concurrent;
 using System.Threading.Channels;

@@ -1,6 +1,5 @@
 using NATS.Client.Core;
 using System.Collections.Concurrent;
-using System.Threading.Channels;
 
 namespace RinhaDeBackEnd;
 public class SincronizacaoBuscaPessoas
