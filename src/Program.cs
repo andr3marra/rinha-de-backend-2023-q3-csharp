@@ -39,7 +39,7 @@ var DuplicatedResultStringResponse = Results.Text(ResponseCriacao.DuplicatedResu
 var ResponseAfeStringResponse = Results.Text(ResponseCriacao.ResponseAfeString, contentType: "application/json; charset=utf-8", statusCode: 422);
 
 app.MapPost("/pessoas", async (HttpContext http,
-                               Channel <Pessoa> channel,
+                               Channel<Pessoa> channel,
                                ConcurrentDictionary<string, Pessoa> pessoaDicionary,
                                ConcurrentDictionary<Guid, Pessoa> pessoasById,
                                ConcurrentDictionary<string, byte> apelidoPessoas,
@@ -50,7 +50,7 @@ app.MapPost("/pessoas", async (HttpContext http,
                                        return ResponseAfeStringResponse;
                                    }
 
-                                   if(!apelidoPessoas.TryAdd(pessoa.Apelido, default(byte))) {
+                                   if (!apelidoPessoas.TryAdd(pessoa.Apelido, default(byte))) {
                                        return DuplicatedResultStringResponse;
                                    }
 
@@ -63,9 +63,10 @@ app.MapPost("/pessoas", async (HttpContext http,
                                    pessoasById.TryAdd(pessoa.Id.Value, pessoa);
                                    http.Response.Headers.Location = $"/pessoas/{pessoa.Id}";
                                    http.Response.StatusCode = 201;
+
                                    return Results.Json(new ResponseCriacao { Pessoa = pessoa }, ResponseCriacaoContext.Default.ResponseCriacao);
 
-                               }).Produces<ResponseCriacao>();
+                               });
 
 var respostaErroResult1 = Results.Text(ResponseConsulta.RespostaErroString, contentType: "application/json; charset=utf-8", statusCode: 404);
 
@@ -74,13 +75,16 @@ app.MapGet("/pessoas/{id}", async (HttpContext http, ConcurrentDictionary<Guid, 
         return Results.Json(value, PersonContext.Default.Pessoa);
     }
     await Task.Delay(10);
-    if (cache.TryGetValue(id, out value))
-    {
+    if (cache.TryGetValue(id, out value)) {
+        return Results.Json(value, PersonContext.Default.Pessoa);
+    }
+    await Task.Delay(10);
+    if (cache.TryGetValue(id, out value)) {
         return Results.Json(value, PersonContext.Default.Pessoa);
     }
 
     return respostaErroResult1;
-}).CacheOutput().Produces<ResponseConsulta>();
+}).CacheOutput(x => x.VaryByValue(varyBy: httpContext => new KeyValuePair<string, string>("id", httpContext.Request.RouteValues["id"].ToString())));
 
 var respostaErroResult2 = Results.Text(ResponseBusca.RespostaErroString, contentType: "application/json; charset=utf-8", statusCode: 400);
 
@@ -94,7 +98,7 @@ app.MapGet("/pessoas", (HttpContext http, ConcurrentDictionary<string, Pessoa> b
                             .Select(p => p.Value);
 
     return Results.Json(new ResponseBusca { Resultados = pessoas }, ResponseBuscaContext.Default.ResponseBusca);
-}).CacheOutput(x => x.Expire(TimeSpan.FromMinutes(1))).Produces<ResponseBusca>();
+}).CacheOutput(x => x.Expire(TimeSpan.FromMinutes(1)));
 
 app.MapGet("/contagem-pessoas", async (NpgsqlConnection conn) => {
     await using (conn) {
@@ -104,6 +108,6 @@ app.MapGet("/contagem-pessoas", async (NpgsqlConnection conn) => {
         var count = await cmd.ExecuteScalarAsync();
         return count;
     }
-});
+}).CacheOutput(x => x.Expire(TimeSpan.FromSeconds(1)));
 
 app.Run();

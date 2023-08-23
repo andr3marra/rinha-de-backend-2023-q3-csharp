@@ -35,7 +35,7 @@ services:
       - nats
     environment:
       - DB_CONNECTION_STRING=Host=db;Username=admin;Password=123;Database=rinha;Connection Pruning Interval=1;Connection Idle Lifetime=2;Enlist=false;No Reset On Close=true
-      - ASPNETCORE_URLS=http://+:80
+      - ASPNETCORE_URLS=http://+:80;http://+:81
       - DOTNET_TieredPGO=1
       - DOTNET_ReadyToRun=0
       - DOTNET_TC_QuickJitForLoops=1
@@ -48,7 +48,7 @@ services:
       resources:
         limits:
           cpus: '0.5'
-          memory: '1.0GB'
+          memory: '0.9GB'
   
   api02:
     image: andr3marra/rinha-api-2023
@@ -58,7 +58,7 @@ services:
       - nats
     environment:
       - DB_CONNECTION_STRING=Host=db;Username=admin;Password=123;Database=rinha;Connection Pruning Interval=1;Connection Idle Lifetime=2;Enlist=false;No Reset On Close=true
-      - ASPNETCORE_URLS=http://+:80
+      - ASPNETCORE_URLS=http://+:80;http://+:81
       - DOTNET_TieredPGO=1
       - DOTNET_ReadyToRun=0
       - DOTNET_TC_QuickJitForLoops=1
@@ -71,7 +71,7 @@ services:
       resources:
         limits:
           cpus: '0.5'
-          memory: '1.0GB'
+          memory: '0.9GB'
   
   nginx:
     image: nginx:latest
@@ -86,7 +86,7 @@ services:
       resources:
         limits:
           cpus: '0.25'
-          memory: '0.3GB'
+          memory: '0.5GB'
 
 networks:
   default:
