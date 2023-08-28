@@ -40,7 +40,6 @@ var ResponseAfeStringResponse = Results.Text(ResponseCriacao.ResponseAfeString, 
 
 app.MapPost("/pessoas", async (HttpContext http,
                                Channel<Pessoa> channel,
-                               ConcurrentDictionary<string, Pessoa> pessoaDicionary,
                                ConcurrentDictionary<Guid, Pessoa> pessoasById,
                                ConcurrentDictionary<string, byte> apelidoPessoas,
                                INatsConnection natsConnection,
@@ -65,7 +64,6 @@ app.MapPost("/pessoas", async (HttpContext http,
                                    http.Response.StatusCode = 201;
 
                                    return Results.Json(new ResponseCriacao { Pessoa = pessoa }, ResponseCriacaoContext.Default.ResponseCriacao);
-
                                });
 
 var respostaErroResult1 = Results.Text(ResponseConsulta.RespostaErroString, contentType: "application/json; charset=utf-8", statusCode: 404);
@@ -98,15 +96,14 @@ app.MapGet("/pessoas", (HttpContext http, ConcurrentDictionary<string, Pessoa> b
                             .Select(p => p.Value);
 
     return Results.Json(new ResponseBusca { Resultados = pessoas }, ResponseBuscaContext.Default.ResponseBusca);
-}).CacheOutput(x => x.Expire(TimeSpan.FromMinutes(1)));
+}).CacheOutput(c => c.SetVaryByQuery("t").Expire(TimeSpan.FromMinutes(1)));
 
 app.MapGet("/contagem-pessoas", async (NpgsqlConnection conn) => {
     await using (conn) {
         await conn.OpenAsync();
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = "select count(1) from pessoas";
-        var count = await cmd.ExecuteScalarAsync();
-        return count;
+        return await cmd.ExecuteScalarAsync();
     }
 }).CacheOutput(x => x.Expire(TimeSpan.FromSeconds(1)));
 
