@@ -52,7 +52,7 @@ public class InsercaoRegistrosPessoas
                 try
                 {
                     var batch = _conn.CreateBatch();
-                    var batchCommands = new List<NpgsqlBatchCommand>();
+                    var batchCommands = new List<NpgsqlBatchCommand>(pessoas.Count);
 
                     foreach (var p in pessoas)
                     {
